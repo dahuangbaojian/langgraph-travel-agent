@@ -7,11 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 import uuid
 from typing import Dict, Any
-import logging
+from ..config.logging_config import get_logger, log_startup, log_shutdown
 
-# 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# 获取logger
+logger = get_logger("ui")
 
 app = FastAPI(title="智能旅行规划助手", version="1.0.0")
 
@@ -515,4 +514,13 @@ def generate_mock_response(message: str) -> str:
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    # 记录启动日志
+    log_startup()
+
+    try:
+        uvicorn.run(app, host="0.0.0.0", port=8001)
+    except KeyboardInterrupt:
+        logger.info("收到停止信号，正在关闭应用...")
+    finally:
+        # 记录关闭日志
+        log_shutdown()

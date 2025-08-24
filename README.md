@@ -1,233 +1,366 @@
-# Full-Stack Python Chatbot with LangGraph
+# 🧳 智能旅行规划助手 (Travel Agent)
+
+一个基于 LangGraph 和 Python 的智能旅行规划系统，支持国内外路线规划，能够为用户提供个性化的旅行建议、路线规划、预算分配等服务。
 
 [![CI](https://github.com/langchain-ai/langgraph-fullstack-python/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/langchain-ai/langgraph-fullstack-python/actions/workflows/unit-tests.yml)
 [![Integration Tests](https://github.com/langchain-ai/langgraph-fullstack-python/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/langchain-ai/langgraph-fullstack-python/actions/workflows/integration-tests.yml)
-[![Open in - LangGraph Studio](https://img.shields.io/badge/Open_in-LangGraph_Studio-00324d.svg?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4NS4zMzMiIGhlaWdodD0iODUuMzMzIiB2ZXJzaW9uPSIxLjAiIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHBhdGggZD0iTTEzIDcuOGMtNi4zIDMuMS03LjEgNi4zLTYuOCAyNS43LjQgMjQuNi4zIDI0LjUgMjUuOSAyNC41QzU3LjUgNTggNTggNTcuNSA1OCAzMi4zIDU4IDcuMyA1Ni43IDYgMzIgNmMtMTIuOCAwLTE2LjEuMy0xOSAxLjhtMzcuNiAxNi42YzIuOCAyLjggMy40IDQuMiAzLjQgNy42cy0uNiA0LjgtMy40IDcuNkw0Ny4yIDQzSDE2LjhsLTMuNC0zLjRjLTQuOC00LjgtNC44LTEwLjQgMC0xNS4ybDMuNC0zLjRoMzAuNHoiLz48cGF0aCBkPSJNMTguOSAyNS42Yy0xLjEgMS4zLTEgMS43LjQgMi41LjkuNiAxLjcgMS44IDEuNyAyLjcgMCAxIC43IDIuOCAxLjYgNC4xIDEuNCAxLjkgMS40IDIuNS4zIDMuMi0xIC42LS42LjkgMS40LjkgMS41IDAgMi43LS41IDIuNy0xIDAtLjYgMS4xLS44IDIuNi0uNGwyLjYuNy0xLjgtMi45Yy01LjktOS4zLTkuNC0xMi4zLTExLjUtOS44TTM5IDI2YzAgMS4xLS45IDIuNS0yIDMuMi0yLjQgMS41LTIuNiAzLjQtLjUgNC4yLjguMyAyIDEuNyAyLjUgMy4xLjYgMS41IDEuNCAyLjMgMiAyIDEuNS0uOSAxLjItMy41LS40LTMuNS0yLjEgMC0yLjgtMi44LS44LTMuMyAxLjYtLjQgMS42LS41IDAtLjYtMS4xLS4xLTEuNS0uNi0xLjItMS42LjctMS43IDMuMy0yLjEgMy41LS41LjEuNS4yIDEuNi4zIDIuMiAwIC43LjkgMS40IDEuOSAxLjYgMi4xLjQgMi4zLTIuMy4yLTMuMi0uOC0uMy0yLTEuNy0yLjUtMy4xLTEuMS0zLTMtMy4zLTMtLjUiLz48L3N2Zz4=)](https://langgraph-studio.vercel.app/templates/open?githubUrl=https://github.com/langchain-ai/langgraph-fullstack-python)
 
-This template demonstrates how to build a full-stack chatbot application using LangGraph's HTTP configuration capabilities. It showcases how to combine a React-style agent with a modern web UI, all hosted within a single LangGraph deployment.
+## ✨ 主要特性
 
-## Key Features
+- 🎯 **智能路线规划**: 根据用户需求自动生成最优旅行路线
+- 🌍 **国内外支持**: 支持 12 个国内城市和 16 个国际城市
+- 🏨 **住宿推荐**: 基于预算和偏好推荐合适的酒店
+- 🍽️ **美食指南**: 推荐当地特色餐厅和美食
+- 💰 **多货币预算管理**: 支持 8 种货币的智能预算分配
+- 🚄 **交通建议**: 提供多种交通方式选择
+- 🛂 **签证信息**: 提供详细的签证类型和申请要求
+- 📱 **现代化 UI**: 美观的 Web 界面，支持实时对话
+- 📊 **数据驱动**: 基于本地 Excel 数据的智能推荐
 
-- 🌐 **Single Deployment** - Host both your agent and UI in one LangGraph deployment
-- 🎨 **Modern UI** - Beautiful chat interface built with FastHTML
-- 🔄 **React-Style Agent** - Intelligent chatbot using LangGraph's React agent pattern
-- 🛠️ **Easy Configuration** - Simple HTTP routing setup through `langgraph.json`
-- ⚡ **Fast Development** - Rapid prototyping with FastHTML's server-side components
+## 🌍 国际化支持
 
-## How It Works
+### 🏠 国内城市 (12 个)
 
-### HTTP Configuration
+- 北京、上海、广州、深圳
+- 杭州、成都、西安、南京
+- 苏州、青岛、厦门、大连
 
-The magic happens in `langgraph.json`, where we configure both the agent and HTTP routes:
+### 🌏 国际城市 (16 个)
 
-```json
-{
-  "dependencies": ["."],
-  "graphs": {
-    "agent": "./src/react_agent/graph.py:graph"
-  },
-  "http": {
-    "app": "./src/react_agent/app.py:app"
-  }
+- **亚洲**: 东京、首尔、新加坡、曼谷、吉隆坡
+- **欧洲**: 巴黎、伦敦、罗马、柏林、阿姆斯特丹
+- **北美**: 纽约、洛杉矶、多伦多、温哥华
+- **大洋洲**: 悉尼、墨尔本
+
+### 💱 多货币支持
+
+支持 8 种主要货币：CNY、USD、EUR、JPY、KRW、GBP、AUD、CAD
+
+### 🛂 签证信息
+
+- 国内城市免签
+- 国际城市提供签证类型和申请要求
+- 支持申根签证等特殊签证类型
+
+## 🏗️ 项目架构
+
+```
+src/travel_agent/
+├── config/          # 配置管理
+│   ├── settings.py      # 应用配置
+│   └── logging_config.py # 日志配置
+├── core/            # 核心模型
+│   └── models.py    # 数据模型定义
+├── data/            # 数据管理
+│   └── manager.py   # 数据管理器
+├── tools/           # 业务工具
+│   └── planner.py   # 旅行规划器
+├── ui/              # 用户界面
+│   └── app.py       # Web应用
+├── graph.py         # LangGraph主图
+└── __init__.py      # 模块初始化
+```
+
+## 🚀 快速开始
+
+### 1. 环境要求
+
+- Python 3.11+
+- LangGraph 0.2.6+
+- pandas, openpyxl
+
+### 2. 安装依赖
+
+```bash
+# 使用项目脚本
+./start.sh
+
+# 或手动安装
+pip install -e .
+```
+
+### 3. 配置环境变量
+
+创建`.env`文件：
+
+```env
+# API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_BASE_URL=https://api.openai-proxy.org/v1
+
+# 应用配置
+TRAVEL_AGENT_DEBUG=true
+TRAVEL_AGENT_MODEL=gpt-4o
+TRAVEL_AGENT_DATA_DIR=travel_data
+```
+
+### 4. 启动服务
+
+```bash
+# 使用启动脚本
+./start.sh
+
+# 或直接启动
+python -m uvicorn travel_agent.ui.app:app --host 0.0.0.0 --port 8001 --reload
+```
+
+### 5. 访问应用
+
+- **Web 界面**: http://localhost:8001
+- **API 文档**: http://localhost:8001/docs
+
+## 📊 数据模型
+
+### 景点类别
+
+- 历史文化、自然风光、城市景观
+- 现代建筑、娱乐休闲、购物中心
+
+### 菜系类型
+
+- 中餐、西餐、日料、韩料、泰餐、当地特色
+
+### 交通方式
+
+- 高铁、飞机、火车、大巴、自驾
+
+## 💬 使用示例
+
+### 基础查询
+
+```
+用户: 我想去北京玩3天，预算5000元，2个人
+助手: 🎉 为您制定了详细的旅行计划！
+      📍 目的地: 北京
+      📅 行程天数: 3天
+      💰 总预算: 5000元
+      👥 人数: 2人
+      ...
+```
+
+### 国际旅行查询
+
+```
+用户: 我想去东京玩5天，预算10000元
+助手: 🎉 为您制定东京5日游计划！
+      📍 目的地: 东京
+      🗾 国家: 日本
+      💴 货币: JPY
+      🛂 签证: 旅游签证
+      ...
+```
+
+## 🔧 自定义配置
+
+### 修改预算分配比例
+
+在`src/travel_agent/config/settings.py`中：
+
+```python
+budget_ratios = {
+    "hotel": 0.4,      # 住宿40%
+    "restaurant": 0.25, # 餐饮25%
+    "attractions": 0.15, # 景点15%
+    "transport": 0.15,   # 交通15%
+    "other": 0.05       # 其他5%
 }
 ```
 
-This configuration:
-1. Defines the agent graph in `graph.py`
-2. Sets up HTTP routes through FastHTML in `app.py`
+### 添加新城市
 
-### FastHTML UI
+在配置文件中添加新城市信息：
 
-The UI is built using FastHTML, a lightweight server-side component framework. Key features:
-
-- Modern chat interface using DaisyUI components
-- Real-time message updates
-- Clean, responsive design
-
-### LangGraph Agent
-
-The chatbot uses LangGraph's React agent pattern, which:
-
-- Processes messages through a Claude 3 model
-- Maintains conversation state
-- Can be easily extended with custom tools
-
-## Getting Started
-
-Install the dependencies:
-
-```bash
-pip install uv
-uv sync --dev 
+```python
+# 支持的城市会自动包含在supported_cities中
+# 系统会自动识别地区、货币、语言等信息
 ```
 
-Then run the local server:
+### 自定义数据
+
+将您的 Excel 文件放入`travel_data/`目录：
+
+- `hotels.xlsx` - 酒店信息
+- `attractions.xlsx` - 景点信息
+- `restaurants.xlsx` - 餐厅信息
+- `transport.xlsx` - 交通信息
+
+## 📁 数据文件格式
+
+### 酒店数据 (hotels.xlsx)
+
+| 字段            | 说明     | 示例                            |
+| --------------- | -------- | ------------------------------- |
+| name            | 酒店名称 | 北京王府井希尔顿酒店            |
+| city            | 城市     | 北京                            |
+| district        | 区域     | 东城区                          |
+| address         | 地址     | 北京市东城区王府井金鱼胡同 8 号 |
+| price_per_night | 每晚价格 | 800                             |
+| rating          | 评分     | 4.6                             |
+| amenities       | 设施     | WiFi,健身房,游泳池,餐厅         |
+| description     | 描述     | 位于王府井商业区，交通便利      |
+
+### 景点数据 (attractions.xlsx)
+
+| 字段           | 说明     | 示例                       |
+| -------------- | -------- | -------------------------- |
+| name           | 景点名称 | 故宫博物院                 |
+| city           | 城市     | 北京                       |
+| category       | 类别     | 历史文化                   |
+| ticket_price   | 门票价格 | 60                         |
+| duration_hours | 游览时长 | 4                          |
+| description    | 描述     | 明清两代皇宫，世界文化遗产 |
+| opening_hours  | 开放时间 | 8:30-17:00                 |
+| best_time      | 最佳时间 | 春秋季节                   |
+| tips           | 贴士     | 建议提前预约，避开节假日   |
+
+## 🛠️ 开发指南
+
+### 添加新功能
+
+1. 在`core/models.py`中定义新的数据模型
+2. 在`data/manager.py`中实现数据管理逻辑
+3. 在`tools/planner.py`中添加业务逻辑
+4. 在`graph.py`中集成新功能
+5. 更新 Web 界面以支持新功能
+
+### 扩展 AI 能力
+
+1. 修改系统提示词
+2. 添加新的工具函数
+3. 实现更复杂的推理逻辑
+4. 集成外部 API 服务
+
+### 性能优化
+
+1. 实现数据缓存
+2. 优化数据库查询
+3. 使用异步处理
+4. 实现负载均衡
+
+## 📋 管理脚本
+
+### 启动和停止
+
 ```bash
-uv run langgraph dev --no-browser
+# 启动应用
+./start.sh
+
+# 停止应用
+./stop.sh
 ```
 
-Visit `http://localhost:2024` to interact with your chatbot!
+### 查看城市信息
 
-## Customization
+```bash
+# 显示所有支持的国内外城市
+./cities.sh
+```
 
-### Modify the Agent
+### 日志管理
 
-Edit `src/react_agent/graph.py` to:
-- Change the system prompt
-- Add custom tools
-- Modify the agent's behavior
+```bash
+# 实时查看日志
+tail -f logs/app.log
 
-### Customize the UI
+# 查看错误日志
+tail -f logs/error.log
 
-Edit `src/react_agent/app.py` to:
-- Update the chat interface
-- Add new components
-- Modify styling
+# 清理旧日志
+python3 -c "from src.travel_agent.config.logging_config import cleanup_logs; cleanup_logs(7)"
+```
 
-## Next Steps
+## 🧪 测试
 
-- Add persistent storage for chat history
-- Implement custom tools for your agent
-- Enhance the UI with additional features
-- Deploy to production using LangGraph Platform
+```bash
+# 运行单元测试
+python -m pytest tests/
 
-For more examples and detailed documentation:
+# 运行集成测试
+python -m pytest tests/integration_tests/
+
+# 运行所有测试
+python -m pytest
+```
+
+## 📈 监控和日志
+
+系统使用结构化日志记录，支持每天自动归档：
+
+- **主日志**: `logs/app.log` (保留 30 天)
+- **错误日志**: `logs/error.log` (保留 30 天)
+- **调试日志**: `logs/debug.log` (保留 7 天，仅调试模式)
+
+```python
+from src.travel_agent.config.logging_config import get_logger
+
+logger = get_logger("your_module")
+logger.info("成功创建旅行计划")
+logger.error("创建旅行计划失败")
+```
+
+## 🔒 安全考虑
+
+- API 密钥存储在环境变量中
+- 输入验证和清理
+- 错误信息不暴露敏感数据
+- 支持 HTTPS 和 WSS
+
+## 🤝 贡献指南
+
+1. Fork 项目
+2. 创建功能分支
+3. 提交更改
+4. 推送到分支
+5. 创建 Pull Request
+
+## 📄 许可证
+
+MIT License
+
+## 🆘 支持
+
+- 查看[Issues](../../issues)
+- 阅读[文档](docs/)
+- 联系开发团队
+
+## 🔮 未来计划
+
+- [ ] 集成实时天气数据
+- [ ] 添加更多非洲和南美城市
+- [ ] 集成实时汇率 API
+- [ ] 实现移动端应用
+- [ ] 集成支付系统
+- [ ] 添加社交分享功能
+- [ ] 实现 AI 语音助手
+- [ ] 支持多语言界面
+- [ ] 添加城市安全等级信息
+
+## 🌟 特色功能
+
+### 智能预算分配
+
+- 根据目的地自动调整预算比例
+- 支持多货币转换
+- 实时汇率更新
+
+### 签证助手
+
+- 详细的签证申请流程
+- 申根签证多国通行
+- 落地签和电子签支持
+
+### 最佳旅行季节
+
+- 基于气候数据推荐
+- 考虑旅游旺季因素
+- 个性化季节建议
+
+---
+
+**享受您的智能旅行规划体验！** ✈️🌍
+
+## 📚 相关链接
+
 - [LangGraph Documentation](https://langchain-ai.github.io/langgraph)
-- [FastHTML Documentation](https://fasthtml.readme.io)
-- [DaisyUI Components](https://daisyui.com/components)
-
-
-<!--
-Configuration auto-generated by `langgraph template lock`. DO NOT EDIT MANUALLY.
-{
-  "config_schemas": {
-    "agent": {
-      "type": "object",
-      "properties": {
-        "model": {
-          "type": "string",
-          "default": "anthropic/claude-3-5-sonnet-20240620",
-          "description": "The name of the language model to use for the agent's main interactions. Should be in the form: provider/model-name.",
-          "environment": [
-            {
-              "value": "anthropic/claude-1.2",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-2.0",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-2.1",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-3-5-sonnet-20240620",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-3-haiku-20240307",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-3-opus-20240229",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-3-sonnet-20240229",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "anthropic/claude-instant-1.2",
-              "variables": "ANTHROPIC_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-0125",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-0301",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-0613",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-1106",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-16k",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-3.5-turbo-16k-0613",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-0125-preview",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-0314",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-0613",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-1106-preview",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-32k",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-32k-0314",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-32k-0613",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-turbo",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-turbo-preview",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4-vision-preview",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4o",
-              "variables": "OPENAI_API_KEY"
-            },
-            {
-              "value": "openai/gpt-4o-mini",
-              "variables": "OPENAI_API_KEY"
-            }
-          ]
-        }
-      },
-      "environment": [
-        "TAVILY_API_KEY"
-      ]
-    }
-  }
-}
--->
+- [FastAPI Documentation](https://fastapi.tiangolo.com)
+- [Uvicorn Documentation](https://www.uvicorn.org)
