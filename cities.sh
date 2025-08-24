@@ -19,37 +19,36 @@ if [ -d "venv" ]; then
 fi
 
 echo ""
-echo "📊 城市统计信息:"
+echo "📊 城市支持信息:"
 echo "----------------------------------------"
 
 # 使用Python获取城市统计
 python3 -c "
 from src.travel_agent.config.settings import config
 
-domestic = config.get_domestic_cities()
-international = config.get_international_cities()
+print('🌍 支持所有国家所有城市！')
+print(f'🏠 已加载城市: {len(config.supported_cities)} 个')
 
-print(f'🏠 国内城市: {len(domestic)} 个')
-print(f'🌏 国际城市: {len(international)} 个')
-print(f'🌍 总计: {len(domestic) + len(international)} 个')
+if len(config.supported_cities) > 0:
+    print('\n📈 地区分布:')
+    regions = {}
+    for city in config.supported_cities:
+        region = city.region.value
+        regions[region] = regions.get(region, 0) + 1
 
-print('\n📈 地区分布:')
-regions = {}
-for city in config.supported_cities:
-    region = city.region.value
-    regions[region] = regions.get(region, 0) + 1
-
-for region, count in sorted(regions.items()):
-    region_name = {
-        'domestic': '🏠 国内',
-        'asia': '🌏 亚洲',
-        'europe': '🇪🇺 欧洲', 
-        'north_america': '🇺🇸 北美',
-        'south_america': '🇧🇷 南美',
-        'africa': '🌍 非洲',
-        'oceania': '🇦🇺 大洋洲'
-    }.get(region, region)
-    print(f'   {region_name}: {count} 个城市')
+    for region, count in sorted(regions.items()):
+        region_name = {
+            'domestic': '🏠 国内',
+            'asia': '🌏 亚洲',
+            'europe': '🇪🇺 欧洲', 
+            'north_america': '🇺🇸 北美',
+            'south_america': '🇧🇷 南美',
+            'africa': '🌍 非洲',
+            'oceania': '🇦🇺 大洋洲'
+        }.get(region, region)
+        print(f'   {region_name}: {count} 个城市')
+else:
+    print('📝 城市信息会在使用时动态创建')
 "
 
 echo ""

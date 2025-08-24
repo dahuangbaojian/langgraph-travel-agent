@@ -119,11 +119,8 @@ class TravelAgentLogger:
         self.logger.info(f"🤖 默认模型: {config.default_model}")
 
         # 城市统计信息
-        domestic_count = len(config.get_domestic_cities())
-        international_count = len(config.get_international_cities())
-        self.logger.info(f"🏠 国内城市: {domestic_count} 个")
-        self.logger.info(f"🌏 国际城市: {international_count} 个")
-        self.logger.info(f"🌍 总计: {len(config.supported_cities)} 个城市")
+        self.logger.info(f"🌍 支持城市: 所有国家所有城市")
+        self.logger.info(f"🏠 已加载城市: {len(config.supported_cities)} 个")
 
         # 货币信息
         currency_count = len(config.supported_currencies)
