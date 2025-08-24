@@ -58,7 +58,13 @@ src/travel_agent/
 ├── data/            # 数据管理
 │   └── manager.py   # 数据管理器
 ├── tools/           # 业务工具
-│   └── planner.py   # 旅行规划器
+│   ├── flights.py       # 航班查询
+│   ├── hotels.py        # 酒店查询
+│   ├── places.py        # 景点/路线
+│   ├── currency.py      # 汇率转换
+│   ├── weather.py       # 天气查询
+│   ├── rag.py           # 知识库检索
+│   └── planner.py       # 旅行规划器
 ├── ui/              # 用户界面
 │   └── app.py       # Web应用
 ├── graph.py         # LangGraph主图
@@ -253,6 +259,44 @@ print(f"语言: {city_info.language}")
 3. 使用异步处理
 4. 实现负载均衡
 
+## 🛠️ 核心工具
+
+### 🛫 航班查询 (flights.py)
+
+- 航班搜索和比较
+- 价格分析和推荐
+- 航线建议
+
+### 🏨 酒店查询 (hotels.py)
+
+- 酒店搜索和筛选
+- 价格比较和推荐
+- 设施和评分信息
+
+### 🏛️ 景点规划 (places.py)
+
+- 景点搜索和分类
+- 路线规划和推荐
+- 门票和时长信息
+
+### 💱 汇率转换 (currency.py)
+
+- 多货币支持
+- 实时汇率转换
+- 旅行成本计算
+
+### 🌤️ 天气查询 (weather.py)
+
+- 当前天气信息
+- 天气预报
+- 旅行天气建议
+
+### 📚 知识库检索 (rag.py)
+
+- 旅行攻略搜索
+- 签证信息查询
+- 智能问答
+
 ## 📋 管理脚本
 
 ### 启动和停止
@@ -270,6 +314,13 @@ print(f"语言: {city_info.language}")
 ```bash
 # 显示所有支持的国内外城市
 ./cities.sh
+```
+
+### 测试工具功能
+
+```bash
+# 测试所有工具
+python3 test_tools.py
 ```
 
 ### 日志管理
