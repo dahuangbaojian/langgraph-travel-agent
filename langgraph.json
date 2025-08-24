@@ -1,0 +1,19 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "travel_agent": {
+      "path": "./src/travel_agent/graph.py:graph",
+      "description": "智能旅行规划助手"
+    }
+  },
+  "apps": {
+    "travel_ui": {
+      "path": "./src/travel_agent/ui/app.py:app",
+      "description": "旅行规划Web界面"
+    }
+  },
+  "auth": {
+    "path": "./src/travel_agent/auth.py:auth"
+  },
+  "env": ".env"
+}
