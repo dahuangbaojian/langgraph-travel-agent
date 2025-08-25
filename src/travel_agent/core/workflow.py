@@ -189,7 +189,7 @@ async def budget_analyzer(state: Dict[str, Any]) -> Dict[str, Any]:
     extracted_info = state["extracted_info"]
     budget = extracted_info.get("budget", 0)
     duration = extracted_info.get("duration_days", 1)
-    currency = extracted_info.get("currency", "CNY")  # 默认人民币
+    currency = extracted_info.get("currency", "CNY")  # 从配置获取默认货币
 
     # 使用LLM智能分析预算
     budget_prompt = f"""
@@ -264,11 +264,7 @@ async def budget_analyzer(state: Dict[str, Any]) -> Dict[str, Any]:
         state["budget_analysis"] = {
             "total_budget": budget,
             "daily_budget": daily_budget,
-            "budget_level": (
-                "经济"
-                if daily_budget < 1000
-                else "中等" if daily_budget < 3000 else "豪华"
-            ),
+            "budget_level": _get_budget_level(daily_budget),
             "is_reasonable": daily_budget >= 500,
         }
         state["current_step"] = "budget_analyzed"
@@ -501,7 +497,11 @@ async def response_formatter(state: Dict[str, Any]) -> Dict[str, Any]:
                     )
                     daily_budget = budget_info.get("daily_budget")
                     if daily_budget is not None:
-                        budget_section += f"• 每日预算: {daily_budget:.0f} 元\n"
+                        # 检查是否为数字类型
+                        if isinstance(daily_budget, (int, float)):
+                            budget_section += f"• 每日预算: {daily_budget:.0f} 元\n"
+                        else:
+                            budget_section += f"• 每日预算: {daily_budget}\n"
                     else:
                         budget_section += "• 每日预算: 未设置\n"
                     budget_section += (
@@ -554,22 +554,7 @@ async def response_formatter(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"• 效率评分: {duration_info.get('efficiency_score', '未知')}/10\n"
                 )
 
-                # 添加每日安排
-                if "daily_schedule" in duration_info:
-                    schedule = duration_info["daily_schedule"]
-                    if schedule and isinstance(schedule, dict):
-                        schedule_items = []
-                        for i, (day, activity) in enumerate(list(schedule.items())[:3]):
-                            if activity:
-                                schedule_items.append(f"第{day}: {activity}")
-                        if schedule_items:
-                            duration_section += (
-                                f"• 前3天安排: {'; '.join(schedule_items)}\n"
-                            )
-                        else:
-                            duration_section += "• 前3天安排: 待规划\n"
-                    else:
-                        duration_section += "• 前3天安排: 待规划\n"
+                # 移除重复的每日安排，只保留详细行程部分
 
                 # 添加时间优化建议
                 if "time_optimization" in duration_plan:
@@ -600,6 +585,33 @@ async def response_formatter(state: Dict[str, Any]) -> Dict[str, Any]:
                         duration_section += "• 时间安排: 待规划\n"
 
                 response_content += duration_section
+
+            # 添加详细每日行程（包含出行方式和住宿）
+            if "daily_schedule" in duration_info:
+                detailed_section = f"\n\n🗺️ **详细每日行程**\n"
+                schedule = duration_info["daily_schedule"]
+
+                for day, activity in list(schedule.items())[:6]:  # 显示前6天
+                    if activity:
+                        # 解析活动内容，提取城市和交通信息
+                        city_info = await _extract_city_and_transport_from_activity(
+                            activity
+                        )
+
+                        detailed_section += f"\n**第{day}天**:\n"
+                        if city_info.get("from_city"):
+                            detailed_section += f"• 🚄 出发: {city_info['from_city']} → {city_info['to_city']}\n"
+                            detailed_section += f"• 🚗 交通: {city_info['transport']}\n"
+                        else:
+                            detailed_section += f"• 📍 活动: {activity}\n"
+
+                        # 添加住宿建议
+                        if city_info.get("to_city"):
+                            detailed_section += f"• 🏨 住宿: {city_info['to_city']} ({city_info['hotel_type']})\n"
+                        else:
+                            detailed_section += f"• 🏨 住宿: 当地特色酒店\n"
+
+                response_content += detailed_section
         else:
             response_content = "抱歉，无法生成旅行计划。"
 
@@ -667,7 +679,7 @@ async def _extract_travel_info_with_llm(message: str) -> Dict[str, Any]:
         travel_info = json.loads(response_content)
 
         # 验证和清理数据
-        travel_info = _validate_and_clean_travel_info(travel_info)
+        travel_info = await _validate_and_clean_travel_info(travel_info)
 
         logger.info(f"LLM提取的旅行信息: {travel_info}")
         return travel_info
@@ -675,13 +687,25 @@ async def _extract_travel_info_with_llm(message: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         logger.error(f"LLM返回的JSON格式错误: {e}")
         logger.error(f"LLM原始响应: {response_content}")
-        # 回退到正则提取
-        return await _fallback_extract_travel_info(message)
+        # 如果LLM完全失败，使用最基本的默认值
+        return {
+            "destination": None,
+            "duration_days": 4,
+            "budget": 10000,
+            "currency": "CNY",
+            "people_count": 1,
+        }
 
     except Exception as e:
         logger.error(f"LLM提取旅行信息失败: {e}")
-        # 回退到正则提取
-        return await _fallback_extract_travel_info(message)
+        # 如果LLM完全失败，使用最基本的默认值
+        return {
+            "destination": None,
+            "duration_days": 4,
+            "budget": 10000,
+            "currency": "CNY",
+            "people_count": 1,
+        }
 
 
 def _optimize_duration(
@@ -775,38 +799,137 @@ def _format_travel_plan_response(plan) -> str:
             response += f" ({recommendation})"
         response += "\n"
 
-    response += "\n📋 **每日行程**:\n"
-
-    for day_plan in plan.daily_itineraries[:3]:  # 只显示前3天
-        response += f"\n第{day_plan.day}天 ({day_plan.date.strftime('%m-%d')}):\n"
-
-        # 检查是否有活动安排
-        has_activities = False
-
-        if day_plan.morning["activity"]:
-            response += f"• 上午: {day_plan.morning['activity'].name} ({day_plan.morning['activity'].category.value})\n"
-            has_activities = True
-        if day_plan.morning["restaurant"]:
-            response += f"• 午餐: {day_plan.morning['restaurant'].name} ({day_plan.morning['restaurant'].cuisine.value})\n"
-            has_activities = True
-
-        if day_plan.afternoon["activity"]:
-            response += f"• 下午: {day_plan.afternoon['activity'].name} ({day_plan.afternoon['activity'].category.value})\n"
-            has_activities = True
-        if day_plan.afternoon["restaurant"]:
-            response += f"• 晚餐: {day_plan.afternoon['restaurant'].name} ({day_plan.afternoon['restaurant'].cuisine.value})\n"
-            has_activities = True
-
-        # 如果没有具体活动，显示建议的活动类型
-        if not has_activities:
-            response += (
-                "• 建议活动: 根据您的偏好，可以安排当地特色景点、美食体验或文化探索\n"
-            )
-            response += "• 具体行程: 详细行程将在后续优化中完善\n"
+        # 移除简单的每日行程，只保留详细的行程部分
 
     response += f"\n{TRAVEL_PLAN_TIP}"
 
     return response
+
+
+async def _extract_city_and_transport_from_activity(activity: str) -> Dict[str, str]:
+    """使用LLM智能提取城市和交通信息"""
+    city_info = {
+        "from_city": None,
+        "to_city": None,
+        "transport": "当地游览",
+        "hotel_type": "当地特色酒店",
+    }
+
+    # 使用LLM智能解析活动内容
+    prompt = f"""
+你是一个旅行行程分析专家，请分析以下旅行活动描述，提取城市和交通信息：
+
+活动描述：{activity}
+
+请分析：
+1. 是否涉及城市间移动
+2. 出发城市和目的地城市
+3. 交通方式
+4. 建议的住宿类型
+
+请用JSON格式回答：
+{{
+    "from_city": "出发城市（如果没有城市间移动，返回null）",
+    "to_city": "目的地城市",
+    "transport": "交通方式（高铁/飞机/汽车/当地游览等）",
+    "hotel_type": "住宿类型（当地特色酒店/市中心酒店/景区附近酒店等）"
+}}
+
+请直接输出JSON，不要有任何解释：
+"""
+
+    try:
+        response = llm.invoke([HumanMessage(content=prompt)])
+        response_content = response.content.strip()
+
+        # 清理响应内容，提取JSON部分
+        if response_content.startswith("```json"):
+            response_content = response_content[7:]
+        if response_content.endswith("```"):
+            response_content = response_content[:-3]
+        response_content = response_content.strip()
+
+        # 解析JSON
+        parsed_info = json.loads(response_content)
+
+        # 更新城市信息
+        city_info.update(parsed_info)
+
+        logger.info(f"LLM解析活动信息: {parsed_info}")
+
+    except Exception as e:
+        logger.error(f"LLM解析活动信息失败: {e}")
+        # 如果LLM完全失败，使用最基本的默认值
+        city_info = {
+            "from_city": None,
+            "to_city": None,
+            "transport": "当地游览",
+            "hotel_type": "当地特色酒店",
+        }
+
+    return city_info
+
+
+def _get_budget_level(daily_budget: float) -> str:
+    """智能判断预算等级"""
+    if daily_budget < 500:
+        return "经济"
+    elif daily_budget < 1500:
+        return "中等"
+    elif daily_budget < 5000:
+        return "中高端"
+    else:
+        return "豪华"
+
+
+async def _get_smart_defaults() -> Dict[str, Any]:
+    """使用LLM智能判断所有默认值"""
+    import datetime
+
+    current_date = datetime.datetime.now()
+
+    prompt = f"""
+你是一个旅行规划专家，请根据当前时间和旅行特点，智能推荐默认的旅行参数。
+
+当前信息：
+- 当前日期：{current_date.strftime('%Y年%m月%d日')}
+- 当前月份：{current_date.month}
+- 当前星期：{current_date.strftime('%A')}
+- 是否工作日：{'否' if current_date.weekday() in [5, 6] else '是'}
+
+请考虑以下因素：
+1. 时间特点（工作日通常单人短途、周末通常结伴中长途）
+2. 季节特点（春季赏花、夏季避暑、秋季观景、冬季滑雪等）
+3. 节假日安排
+4. 旅行类型（商务、休闲、家庭等）
+5. 目的地特点
+
+请推荐合理的默认值，用JSON格式回答：
+{{
+    "duration_days": 默认旅行天数（1-14天）,
+    "people_count": 默认旅行人数（1-6人）,
+    "budget_level": "经济/中等/中高端/豪华",
+    "reason": "推荐理由"
+}}
+
+请直接输出JSON，不要有任何解释：
+"""
+
+    response = llm.invoke([HumanMessage(content=prompt)])
+    response_content = response.content.strip()
+
+    # 清理响应内容，提取JSON部分
+    if response_content.startswith("```json"):
+        response_content = response_content[7:]
+    if response_content.endswith("```"):
+        response_content = response_content[:-3]
+    response_content = response_content.strip()
+
+    # 解析JSON
+    defaults = json.loads(response_content)
+
+    logger.info(f"LLM智能默认值: {defaults}")
+    return defaults
 
 
 async def _enhance_info_with_tools(
@@ -888,150 +1011,127 @@ async def _find_potential_cities(message: str) -> List[str]:
         return []
 
 
-def _validate_and_clean_travel_info(travel_info: Dict[str, Any]) -> Dict[str, Any]:
-    """验证和清理LLM提取的旅行信息"""
+async def _validate_and_clean_travel_info(
+    travel_info: Dict[str, Any],
+) -> Dict[str, Any]:
+    """使用LLM智能验证和清理旅行信息"""
     cleaned_info = {}
 
-    # 目的地验证
-    destination = travel_info.get("destination")
-    if destination and isinstance(destination, str) and len(destination.strip()) > 0:
-        cleaned_info["destination"] = destination.strip()
-    else:
-        cleaned_info["destination"] = None
+    # 使用LLM智能验证和清理
+    prompt = f"""
+你是一个旅行信息验证专家，请验证和清理以下旅行信息：
 
-    # 天数验证和清理
-    duration = travel_info.get("duration_days")
-    if duration is not None:
-        try:
-            if isinstance(duration, str):
-                # 处理"一周"、"周末"等文本
-                if "周" in duration or "week" in duration.lower():
-                    cleaned_info["duration_days"] = 7
-                elif "周末" in duration or "weekend" in duration.lower():
-                    cleaned_info["duration_days"] = 2
-                else:
-                    # 提取数字
-                    import re
+原始信息：{travel_info}
 
-                    num_match = re.search(r"\d+", duration)
-                    if num_match:
-                        cleaned_info["duration_days"] = int(num_match.group())
-                    else:
-                        cleaned_info["duration_days"] = 3  # 默认3天
-            else:
-                cleaned_info["duration_days"] = int(duration)
-        except (ValueError, TypeError):
-            cleaned_info["duration_days"] = 3  # 默认3天
-    else:
-        cleaned_info["duration_days"] = 3  # 默认3天
+请验证和清理：
+1. 目的地：确保是有效的城市、国家或地区名称
+2. 天数：将文本描述转换为具体天数（如"一周"→7天，"周末"→2天）
+3. 预算：提取数字金额，处理"万"、"W"等单位
+4. 人数：提取具体人数，处理"一家3口"等表达
+5. 货币：确保货币代码有效
 
-    # 预算验证和清理
-    budget = travel_info.get("budget")
-    if budget is not None:
-        try:
-            if isinstance(budget, str):
-                # 提取数字
-                import re
+请用JSON格式回答，保持原有结构：
+{{
+    "destination": "清理后的目的地",
+    "duration_days": 清理后的天数（数字）,
+    "budget": 清理后的预算（数字）,
+    "currency": "清理后的货币代码",
+    "people_count": 清理后的人数（数字）
+}}
 
-                num_match = re.search(r"\d+", budget)
-                if num_match:
-                    cleaned_info["budget"] = float(num_match.group())
-                else:
-                    cleaned_info["budget"] = None
-            else:
-                cleaned_info["budget"] = float(budget)
-        except (ValueError, TypeError):
-            cleaned_info["budget"] = None
-    else:
-        cleaned_info["budget"] = None
+请直接输出JSON，不要有任何解释：
+"""
 
-    # 人数验证和清理
-    people = travel_info.get("people_count")
-    if people is not None:
-        try:
-            if isinstance(people, str):
-                # 提取数字
-                import re
+    try:
+        response = llm.invoke([HumanMessage(content=prompt)])
+        response_content = response.content.strip()
 
-                num_match = re.search(r"\d+", people)
-                if num_match:
-                    cleaned_info["people_count"] = int(num_match.group())
-                else:
-                    cleaned_info["people_count"] = 1  # 默认1人
-            else:
-                cleaned_info["people_count"] = int(people)
-        except (ValueError, TypeError):
-            cleaned_info["people_count"] = 1  # 默认1人
-    else:
-        cleaned_info["people_count"] = 1  # 默认1人
+        # 清理响应内容，提取JSON部分
+        if response_content.startswith("```json"):
+            response_content = response_content[7:]
+        if response_content.endswith("```"):
+            response_content = response_content[:-3]
+        response_content = response_content.strip()
+
+        # 解析JSON
+        cleaned_info = json.loads(response_content)
+
+        logger.info(f"LLM验证和清理完成: {cleaned_info}")
+
+    except Exception as e:
+        logger.warning(f"LLM验证和清理失败: {e}，使用简单规则")
+        # 回退到简单规则
+        cleaned_info = _fallback_validate_travel_info(travel_info)
+
+        # 如果缺少默认值，使用LLM智能判断
+    if not cleaned_info.get("duration_days") or not cleaned_info.get("people_count"):
+        smart_defaults = await _get_smart_defaults()
+
+        if not cleaned_info.get("duration_days"):
+            cleaned_info["duration_days"] = smart_defaults["duration_days"]
+            logger.info(f"使用LLM智能默认天数: {smart_defaults['duration_days']}")
+
+        if not cleaned_info.get("people_count"):
+            cleaned_info["people_count"] = smart_defaults["people_count"]
+            logger.info(f"使用LLM智能默认人数: {smart_defaults['people_count']}")
 
     return cleaned_info
 
 
-async def _fallback_extract_travel_info(message: str) -> Dict[str, Any]:
-    """回退到正则表达式提取旅行信息（当LLM失败时）"""
-    logger.info("使用回退方法提取旅行信息")
+async def _fallback_validate_travel_info(travel_info: Dict[str, Any]) -> Dict[str, Any]:
+    """使用LLM进行回退验证和清理"""
+    cleaned_info = {}
 
-    info = {}
+    # 使用LLM进行智能验证和清理
+    prompt = f"""
+你是一个旅行信息验证专家，请验证和清理以下旅行信息：
 
-    # 简化的城市名提取 - 使用基本的正则模式
-    city_patterns = [
-        r"去([^玩去旅游度假]+?)(?:玩|旅游|度假|旅行)",
-        r"到([^玩去旅游度假]+?)(?:玩|旅游|度假|旅行)",
-        r"想去([^玩去旅游度假]+?)(?:玩|旅游|度假|旅行)",
-        r"计划去([^玩去旅游度假]+?)(?:玩|旅游|度假|旅行)",
-    ]
+原始信息：{travel_info}
 
-    # 尝试提取城市名
-    for pattern in city_patterns:
-        match = re.search(pattern, message)
-        if match:
-            city_name = match.group(1).strip()
-            if len(city_name) >= 2 and city_name not in [
-                "哪里",
-                "什么地方",
-                "哪个地方",
-            ]:
-                info["destination"] = city_name
-                break
+请验证和清理：
+1. 目的地：确保是有效的城市、国家或地区名称
+2. 天数：将文本描述转换为具体天数（如"一周"→7天，"周末"→2天）
+3. 预算：提取数字金额，处理"万"、"W"等单位
+4. 人数：提取具体人数，处理"一家3口"等表达
+5. 货币：确保货币代码有效
 
-    # 如果没有通过模式提取到，尝试关键词匹配
-    if "destination" not in info:
-        potential_cities = await _find_potential_cities(message)
-        if potential_cities:
-            info["destination"] = potential_cities[0]
+请用JSON格式回答，保持原有结构：
+{{
+    "destination": "清理后的目的地",
+    "duration_days": 清理后的天数（数字）,
+    "budget": 清理后的预算（数字）,
+    "currency": "清理后的货币代码",
+    "people_count": 清理后的人数（数字）
+}}
 
-    # 提取时间信息
-    days_match = re.search(r"(\d+)天", message)
-    if days_match:
-        info["duration_days"] = int(days_match.group(1))
-    elif "一周" in message or "7天" in message:
-        info["duration_days"] = 7
-    elif "周末" in message or "2天" in message:
-        info["duration_days"] = 2
-    else:
-        info["duration_days"] = 3  # 默认3天
+请直接输出JSON，不要有任何解释：
+"""
 
-    # 提取预算信息
-    budget_match = re.search(r"(\d+)元", message)
-    if budget_match:
-        info["budget"] = float(budget_match.group(1))
-    elif "万" in message:
-        # 处理"2W"、"2万"等格式
-        wan_match = re.search(r"(\d+)[W万]", message)
-        if wan_match:
-            info["budget"] = float(wan_match.group(1)) * 10000
+    try:
+        response = llm.invoke([HumanMessage(content=prompt)])
+        response_content = response.content.strip()
 
-    # 提取人数
-    people_match = re.search(r"(\d+)人", message)
-    if people_match:
-        info["people_count"] = int(people_match.group(1))
-    elif "一家" in message and "口" in message:
-        # 处理"一家3口"等格式
-        family_match = re.search(r"一家(\d+)口", message)
-        if family_match:
-            info["people_count"] = int(family_match.group(1))
-    else:
-        info["people_count"] = 1  # 默认1人
+        # 清理响应内容，提取JSON部分
+        if response_content.startswith("```json"):
+            response_content = response_content[7:]
+        if response_content.endswith("```"):
+            response_content = response_content[:-3]
+        response_content = response_content.strip()
 
-    return info
+        # 解析JSON
+        cleaned_info = json.loads(response_content)
+
+        logger.info(f"LLM回退验证和清理完成: {cleaned_info}")
+
+    except Exception as e:
+        logger.error(f"LLM回退验证和清理失败: {e}")
+        # 如果LLM完全失败，使用最基本的默认值
+        cleaned_info = {
+            "destination": travel_info.get("destination"),
+            "duration_days": 4,
+            "budget": 10000,
+            "currency": "CNY",
+            "people_count": 1,
+        }
+
+    return cleaned_info
