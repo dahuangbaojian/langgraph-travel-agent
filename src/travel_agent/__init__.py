@@ -5,13 +5,14 @@ __author__ = "Travel Agent Team"
 
 from .config.settings import config
 from .core.models import *
-from .data.manager import travel_data_manager
+
+# 数据管理器已移除，使用LLM + Tools方式
 from .tools.planner import travel_planner
 from .graph import graph
 
 __all__ = [
     "config",
-    "travel_data_manager", 
+    # "travel_data_manager",  # 已移除
     "travel_planner",
-    "graph"
+    "graph",
 ]

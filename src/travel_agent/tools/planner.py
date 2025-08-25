@@ -17,11 +17,9 @@ from src.travel_agent.core.models import (
     TravelPreferences,
     BudgetBreakdown,
     DailyItinerary,
-    AttractionCategory,
-    CuisineType,
-    TransportType,
 )
-from src.travel_agent.data.manager import travel_data_manager
+
+# 数据管理器已移除，使用LLM + Tools方式
 from src.travel_agent.config.settings import config
 
 logger = logging.getLogger(__name__)
@@ -31,7 +29,7 @@ class TravelPlanner:
     """旅行规划器 - 重构版"""
 
     def __init__(self):
-        self.data_manager = travel_data_manager
+        pass  # 数据管理器已移除，使用LLM + Tools方式
 
     def create_travel_plan(self, request: TravelRequest) -> TravelPlan:
         """根据旅行请求创建完整的旅行计划"""
