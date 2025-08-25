@@ -62,7 +62,7 @@ class TravelAgentConfig:
     excel_files: Dict[str, str] = None
 
     # LLM配置
-    default_model: str = "gpt-4o"
+    default_model: str = "gpt-4.1"
     temperature: float = 0.7
     max_tokens: int = 2000
 

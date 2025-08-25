@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能旅行规划助手 - AI Powered Travel Planner</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/css/style.css" rel="stylesheet">
+    
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-plane-departure me-2"></i>
+                智能旅行规划助手
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-robot me-1"></i>
+                    Powered by GPT-4.1
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section text-center py-5">
+        <div class="container">
+            <h1 class="display-4 fw-bold text-primary mb-3">
+                <i class="fas fa-globe-americas me-3"></i>
+                让AI为你规划完美旅程
+            </h1>
+            <p class="lead text-muted mb-4">
+                基于LangGraph和GPT-4的智能旅行规划系统，为你提供个性化、专业的旅行建议
+            </p>
+            <div class="hero-features">
+                <span class="badge bg-success me-2 mb-2">
+                    <i class="fas fa-plane me-1"></i>航班查询
+                </span>
+                <span class="badge bg-info me-2 mb-2">
+                    <i class="fas fa-hotel me-1"></i>酒店推荐
+                </span>
+                <span class="badge bg-warning me-2 mb-2">
+                    <i class="fas fa-map-marked-alt me-1"></i>景点规划
+                </span>
+                <span class="badge bg-secondary me-2 mb-2">
+                    <i class="fas fa-cloud-sun me-1"></i>天气信息
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <div class="row">
+            <!-- Input Section -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comments me-2 text-primary"></i>
+                            告诉我你的旅行需求
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="userInput" class="form-label">旅行描述</label>
+                            <textarea class="form-control" id="userInput" rows="4" 
+                                    placeholder="例如：我想去东京旅行3天，预算5000元，喜欢美食和购物..."></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                开始规划
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat History -->
+                <div class="card shadow-sm border-0 mt-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-history me-2 text-primary"></i>
+                            对话历史
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="chatHistory" class="chat-container">
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-comments fa-3x mb-3"></i>
+                                <p>开始你的旅行规划对话吧！</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Actions -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-bolt me-2 text-warning"></i>
+                            快速操作
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm" onclick="quickQuery('我想去巴黎旅行5天，预算8000元')">
+                                <i class="fas fa-eiffel-tower me-1"></i>
+                                巴黎5日游
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="quickQuery('我想去东京旅行3天，喜欢美食')">
+                                <i class="fas fa-sushi me-1"></i>
+                                东京美食游
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="quickQuery('我想去纽约旅行一周，预算15000元')">
+                                <i class="fas fa-building me-1"></i>
+                                纽约一周游
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-star me-2 text-warning"></i>
+                            核心功能
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                智能行程规划
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                多语言支持
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                实时信息查询
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                个性化推荐
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2 text-info"></i>
+                            系统状态
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">●</span>
+                            <small>AI模型在线</small>
+                        </div>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-success me-2">●</span>
+                            <small>工具系统正常</small>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-success me-2">●</span>
+                            <small>数据服务正常</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container text-center">
+            <p class="text-muted mb-0">
+                <i class="fas fa-code me-1"></i>
+                Powered by LangGraph & GPT-4 | 
+                <i class="fas fa-heart text-danger me-1"></i>
+                Made with ❤️
+            </p>
+        </div>
+    </footer>
+
+    <!-- Loading Modal -->
+    <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h6>AI正在为你规划旅程...</h6>
+                    <p class="text-muted mb-0">请稍候，这可能需要几秒钟</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

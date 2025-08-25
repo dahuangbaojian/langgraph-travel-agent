@@ -18,6 +18,9 @@ class TravelAgentLogger:
         self.log_dir = Path("logs")
         self._setup_logging()
 
+        # 防止重复日志
+        self.logger.propagate = False
+
     def _setup_logging(self):
         """设置日志系统"""
         # 创建日志目录

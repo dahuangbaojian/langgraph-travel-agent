@@ -1,5 +1,11 @@
 """Travel Agent Graph - 重构版"""
 
+import os
+from dotenv import load_dotenv
+
+# 加载环境变量
+load_dotenv()
+
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
@@ -40,9 +46,10 @@ class TravelAgentState(TypedDict):
 
 # 创建LLM
 llm = ChatOpenAI(
-    model=config.default_model,
-    temperature=config.temperature,
-    max_tokens=config.max_tokens,
+    model=os.getenv("OPENAI_MODEL", "gpt-4.1"),
+    temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.7")),
+    max_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "4000")),
+    openai_api_base=os.getenv("OPENAI_BASE_URL"),
 )
 
 # 旅行规划系统提示词
@@ -109,14 +116,37 @@ def travel_agent(state: TravelAgentState):
             # 信息不完整，询问缺失信息
             response_content = _ask_for_missing_info(travel_request)
     else:
-        # 没有提取到旅行信息，正常对话
-        response = llm.invoke(messages)
-        response_content = response.content
+        # 没有提取到旅行信息，使用AI生成回复
+        try:
+            # 构建简化的提示词
+            simple_prompt = f"""你是一个专业的旅行规划师。用户说："{user_message}"
+
+请根据用户的需求，提供专业的旅行建议。包括：
+1. 目的地推荐
+2. 行程安排建议
+3. 预算规划
+4. 注意事项
+
+请用中文回复，要专业、实用、友好。"""
+
+            # 使用LLM生成回复
+            response = llm.invoke([HumanMessage(content=simple_prompt)])
+            response_content = response.content
+        except Exception as e:
+            logger.error(f"AI生成回复失败: {e}")
+            response_content = f"收到您的旅行需求：{user_message}\n\n我正在为您规划完美的旅程，请稍候..."
 
     # 更新状态
     state["messages"].append(AIMessage(content=response_content))
 
-    return state
+    # 返回包含消息的状态
+    return {
+        "messages": state["messages"],
+        "current_plan": state.get("current_plan", {}),
+        "user_preferences": state.get("user_preferences", {}),
+        "extracted_info": state.get("extracted_info", {}),
+        "travel_request": state.get("travel_request", {}),
+    }
 
 
 def _extract_travel_info(message: str) -> Dict[str, Any]:
@@ -329,3 +359,8 @@ graph.set_entry_point("travel_agent")
 
 # 编译图
 graph = graph.compile()
+
+
+def create_travel_agent():
+    """创建旅行代理实例"""
+    return graph

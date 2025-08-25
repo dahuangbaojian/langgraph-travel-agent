@@ -1,12 +1,12 @@
 [project]
-name = "react-agent"
-version = "0.0.1"
-description = "Starter template for making a custom Reasoning and Action agent (using tool calling) in LangGraph."
+name = "travel-agent"
+version = "1.0.0"
+description = "智能旅行规划助手 - 基于LangGraph的AI旅行规划系统"
 authors = [
-    { name = "William Fu-Hinthorn", email = "13333726+hinthornw@users.noreply.github.com" },
+    { name = "黄建", email = "huangjian@example.com" },
 ]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "langgraph>=0.2.6",
@@ -19,6 +19,11 @@ dependencies = [
     "tavily-python>=0.4.0",
     "python-fasthtml>=0.12.1",
     "langgraph-sdk>=0.1.57",
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "jinja2>=3.0.0",
 ]
 
 
@@ -30,11 +35,9 @@ requires = ["setuptools>=73.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["langgraph.templates.react_agent", "react_agent"]
+packages = ["travel_agent"]
 [tool.setuptools.package-dir]
-"langgraph.templates.react_agent" = "src/react_agent"
-"react_agent" = "src/react_agent"
-
+"travel_agent" = "src/travel_agent"
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
