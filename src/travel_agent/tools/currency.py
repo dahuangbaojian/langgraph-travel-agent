@@ -64,3 +64,28 @@ def convert_currency(
 ) -> Optional[float]:
     """货币转换的便捷函数"""
     return currency_tool.convert_currency(amount, from_currency, to_currency)
+
+
+async def get_exchange_rate(
+    from_currency: str, to_currency: str = "CNY"
+) -> Optional[str]:
+    """获取格式化的汇率信息字符串"""
+    try:
+        if from_currency == to_currency:
+            return f"1 {from_currency} = 1 {to_currency}"
+
+        if from_currency == "CNY":
+            # 从人民币转换到其他货币
+            if to_currency in currency_tool.exchange_rates:
+                rate = 1 / currency_tool.exchange_rates[to_currency]
+                return f"1 CNY = {rate:.4f} {to_currency}"
+        else:
+            # 从其他货币转换到人民币
+            if from_currency in currency_tool.exchange_rates:
+                rate = currency_tool.exchange_rates[from_currency]
+                return f"1 {from_currency} = {rate:.2f} CNY"
+
+        return None
+    except Exception as e:
+        logger.error(f"获取汇率信息失败: {e}")
+        return None

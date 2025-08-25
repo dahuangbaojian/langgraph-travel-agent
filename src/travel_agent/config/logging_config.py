@@ -121,9 +121,8 @@ class TravelAgentLogger:
         self.logger.info(f"🐛 调试模式: {config.debug}")
         self.logger.info(f"🤖 默认模型: {config.default_model}")
 
-        # 城市统计信息
-        self.logger.info(f"🌍 支持城市: 所有国家所有城市")
-        self.logger.info(f"🏠 已加载城市: {len(config.supported_cities)} 个")
+        # 城市支持信息
+        self.logger.info(f"🌍 支持城市: 所有国家所有城市 (LLM智能识别)")
 
         # 货币信息
         currency_count = len(config.supported_currencies)

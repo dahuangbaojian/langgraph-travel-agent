@@ -50,3 +50,22 @@ def get_current_weather(city: str) -> Optional[Dict[str, Any]]:
     """获取当前天气的便捷函数"""
     weather = weather_tool.get_current_weather(city)
     return weather.__dict__ if weather else None
+
+
+async def get_weather_info(city: str) -> Optional[str]:
+    """获取格式化的天气信息字符串"""
+    try:
+        weather = weather_tool.get_current_weather(city)
+        if weather:
+            weather_str = (
+                f"📍 {weather.city}\n"
+                f"🌡️ 温度: {weather.temperature_low:.1f}°C - {weather.temperature_high:.1f}°C\n"
+                f"☁️ 天气: {weather.weather_condition}\n"
+                f"💧 湿度: {weather.humidity}%\n"
+                f"💨 风速: {weather.wind_speed} km/h"
+            )
+            return weather_str
+        return None
+    except Exception as e:
+        logger.error(f"获取天气信息失败: {e}")
+        return None
