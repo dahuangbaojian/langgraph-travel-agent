@@ -5,7 +5,9 @@
 DURATION_PLANNING_PROMPT = """
 你是一个专业的旅行时长规划专家，请为以下旅行制定智能时长计划：
 
-旅行信息：{travel_info}
+目的地：{destination}
+预算：{budget}元
+偏好：{preferences}
 
 请考虑以下因素：
 1. 目的地特点：城市游、自然风光、文化体验等
@@ -15,10 +17,8 @@ DURATION_PLANNING_PROMPT = """
 
 请制定智能时长计划：
 {{
-    "optimized_duration": 优化后的天数（数字）,
-    "reason": "时长优化理由",
-    "efficiency_score": "时间利用效率评分（1-10）",
-    "daily_schedule": "每日活动安排建议",
+    "recommended_duration": 推荐天数（数字）,
+    "reason": "时长建议理由",
     "time_optimization": "时间优化建议"
 }}
 

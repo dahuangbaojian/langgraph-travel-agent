@@ -28,7 +28,7 @@ class TravelAgentLogger:
 
         # 创建logger
         self.logger = logging.getLogger(self.name)
-        self.logger.setLevel(logging.DEBUG if config.debug else logging.INFO)
+        self.logger.setLevel(logging.DEBUG if config.debug_mode else logging.INFO)
 
         # 清除已有的handlers
         self.logger.handlers.clear()
@@ -75,7 +75,7 @@ class TravelAgentLogger:
         self.logger.addHandler(error_handler)
 
         # 调试日志文件 - 每天归档
-        if config.debug:
+        if config.debug_mode:
             debug_handler = logging.handlers.TimedRotatingFileHandler(
                 filename=self.log_dir / "debug.log",
                 when="midnight",
@@ -116,13 +116,10 @@ class TravelAgentLogger:
     def log_startup(self):
         """记录启动信息"""
         self.logger.info("=" * 60)
-        self.logger.info(f"🚀 {config.app_name} v{config.version} 启动")
+        self.logger.info(f"🚀 {config.app_name} v{config.app_version} 启动")
         self.logger.info(f"📁 日志目录: {self.log_dir.absolute()}")
-        self.logger.info(f"🐛 调试模式: {config.debug}")
-        self.logger.info(f"🤖 默认模型: {config.default_model}")
-
-        # 城市支持信息
-        self.logger.info(f"🌍 支持城市: 所有国家所有城市 (LLM智能识别)")
+        self.logger.info(f"🐛 调试模式: {config.debug_mode}")
+        self.logger.info(f"🤖 默认模型: {config.openai_model}")
 
         self.logger.info("=" * 60)
 

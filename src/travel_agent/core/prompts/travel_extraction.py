@@ -12,6 +12,7 @@ TRAVEL_EXTRACTION_PROMPT = """
 
 可选参数（如果有提到则提取）：
 4. 人数：提取具体的旅行人数（默认2人）
+5. 偏好：提取用户的旅行偏好（如美食、文化、自然等）
 
 请严格按照以下JSON格式输出，不要包含任何其他文字或解释：
 
@@ -19,7 +20,8 @@ TRAVEL_EXTRACTION_PROMPT = """
     "destination": "提取到的目的地名称",
     "duration_days": 提取到的天数,
     "budget": 提取到的预算金额（数字）,
-    "people_count": 提取到的人数（默认2）"
+    "people_count": 提取到的人数（默认2）,
+    "preferences": ["提取到的偏好列表"]
 }}
 
 用户消息：{message}

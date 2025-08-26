@@ -7,6 +7,7 @@ from .intent_analysis import INTENT_ANALYSIS_PROMPT
 from .budget_analysis import BUDGET_ANALYSIS_PROMPT
 from .duration_planning import DURATION_PLANNING_PROMPT
 from .travel_extraction import TRAVEL_EXTRACTION_PROMPT
+from .route_generation import ROUTE_GENERATION_PROMPT
 
 
 __all__ = [
@@ -15,4 +16,5 @@ __all__ = [
     "BUDGET_ANALYSIS_PROMPT",
     "DURATION_PLANNING_PROMPT",
     "TRAVEL_EXTRACTION_PROMPT",
+    "ROUTE_GENERATION_PROMPT",
 ]

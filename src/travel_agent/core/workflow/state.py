@@ -1,6 +1,7 @@
 """简化的状态类型定义"""
 
 from typing import TypedDict, List, Dict, Any, Optional, Annotated
+from ..models import TravelInfo
 
 
 class TravelState(TypedDict):
@@ -15,8 +16,8 @@ class TravelState(TypedDict):
     # 意图分析
     intent_analysis: Optional[Dict[str, Any]]
 
-    # 旅行信息
-    travel_info: Optional[Dict[str, Any]]
+    # 旅行信息 - 使用强类型模型
+    travel_info: Optional[TravelInfo]
 
     # 旅行计划
     travel_plan: Optional[Dict[str, Any]]

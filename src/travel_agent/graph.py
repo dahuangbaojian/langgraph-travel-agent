@@ -1,65 +1,41 @@
-"""旅行代理图结构 - 专业化智能版本"""
+"""旅行代理主图定义"""
 
-import os
 import logging
+from typing import Dict, Any
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 
-# 导入状态和节点
+from .core.workflow.nodes import message_processor, travel_planner, response_generator
 from .core.workflow.state import TravelState
-from .core.workflow import (
-    message_processor,
-    travel_planner,
-    response_generator,
-)
 
 logger = logging.getLogger(__name__)
 
 
-# 创建LLM实例（延迟创建）
-def get_llm():
-    """延迟创建LLM实例"""
-    try:
-        return ChatOpenAI(
-            model=os.getenv("OPENAI_MODEL", "gpt-4.1"),
-            temperature=float(os.getenv("OPENAI_TEMPERATURE", "0.7")),
-            max_tokens=int(os.getenv("OPENAI_MAX_TOKENS", "4000")),
-            openai_api_base=os.getenv("OPENAI_BASE_URL"),
-        )
-    except Exception as e:
-        logger.warning(f"创建LLM实例失败: {e}")
-        return None
+def create_graph() -> StateGraph:
+    """创建旅行代理工作流图"""
 
+    # 创建状态图
+    workflow = StateGraph(TravelState)
 
-# 构建智能图
-def create_graph():
-    """创建旅行代理图"""
-    graph = StateGraph(TravelState)
-
-    # 添加核心节点
-    graph.add_node("message_processor", message_processor)  # 消息处理和信息提取
-    graph.add_node("travel_planner", travel_planner)  # 旅行规划核心逻辑
-    graph.add_node("response_generator", response_generator)  # 响应生成
+    # 添加节点
+    workflow.add_node("message_processor", message_processor)
+    workflow.add_node("travel_planner", travel_planner)
+    workflow.add_node("response_generator", response_generator)
 
     # 设置入口点
-    graph.set_entry_point("message_processor")
+    workflow.set_entry_point("message_processor")
 
-    # 线性流程
-    graph.add_edge("message_processor", "travel_planner")
-    graph.add_edge("travel_planner", "response_generator")
-    graph.add_edge("response_generator", END)
+    # 添加边
+    workflow.add_edge("message_processor", "travel_planner")
+    workflow.add_edge("travel_planner", "response_generator")
+    workflow.add_edge("response_generator", END)
 
-    # 编译图
-    compiled_graph = graph.compile()
-
-    logger.info("旅行代理图构建完成")
-    return compiled_graph
-
-
-# 创建旅行代理实例
-graph = create_graph()
+    logger.info("旅行代理工作流图创建成功")
+    return workflow
 
 
 def create_travel_agent():
-    """创建旅行代理实例"""
-    return graph
+    """创建编译后的旅行代理实例，供应用使用"""
+    graph = create_graph()
+    compiled_graph = graph.compile()
+    logger.info("旅行代理实例创建成功")
+    return compiled_graph
