@@ -124,10 +124,6 @@ class TravelAgentLogger:
         # 城市支持信息
         self.logger.info(f"🌍 支持城市: 所有国家所有城市 (LLM智能识别)")
 
-        # 货币信息
-        currency_count = len(config.supported_currencies)
-        self.logger.info(f"💱 支持货币: {currency_count} 种")
-
         self.logger.info("=" * 60)
 
     def log_shutdown(self):

@@ -13,26 +13,8 @@ from datetime import datetime
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 
-from ..core.prompts import (
-    BUDGET_RATIO_PROMPT,
-    EXCHANGE_RATE_PROMPT,
-    CITY_VALIDATION_PROMPT,
-)
 
 logger = logging.getLogger(__name__)
-
-
-class Currency(Enum):
-    """货币枚举"""
-
-    CNY = "CNY"  # 人民币
-    USD = "USD"  # 美元
-    EUR = "EUR"  # 欧元
-    JPY = "JPY"  # 日元
-    KRW = "KRW"  # 韩元
-    GBP = "GBP"  # 英镑
-    AUD = "AUD"  # 澳元
-    CAD = "CAD"  # 加元
 
 
 @dataclass
@@ -60,11 +42,6 @@ class TravelAgentConfig:
     # 预算分配比例 - 动态生成
     budget_ratios: Optional[Dict[str, float]] = None
 
-    # 国际化配置
-    default_currency: Currency = Currency.CNY
-    supported_currencies: List[Currency] = None
-    exchange_rates: Optional[Dict[str, float]] = None
-
     # LLM实例
     llm: Optional[ChatOpenAI] = None
 
@@ -76,19 +53,6 @@ class TravelAgentConfig:
         # 基础文件配置 - 现在使用动态数据加载
         if self.excel_files is None:
             self.excel_files = {}  # 动态加载真实数据文件
-
-        # 支持货币列表
-        if self.supported_currencies is None:
-            self.supported_currencies = [
-                Currency.CNY,
-                Currency.USD,
-                Currency.EUR,
-                Currency.JPY,
-                Currency.KRW,
-                Currency.GBP,
-                Currency.AUD,
-                Currency.CAD,
-            ]
 
         # 预算分配和汇率将在需要时动态生成
 
@@ -126,128 +90,35 @@ class TravelAgentConfig:
     async def generate_budget_ratios(
         self, travel_info: Dict[str, Any]
     ) -> Dict[str, float]:
-        """使用LLM智能生成预算分配比例"""
-        try:
-            prompt = BUDGET_RATIO_PROMPT.format(
-                travel_info=travel_info,
-                destination=travel_info.get("destination", "未知"),
-                budget_level=travel_info.get("budget_level", "中等"),
-                duration_days=travel_info.get("duration_days", 3),
-                people_count=travel_info.get("people_count", 2),
-            )
-
-            llm = self.llm_instance
-            if llm is None:
-                raise Exception("LLM实例不可用")
-            response = llm.invoke([HumanMessage(content=prompt)])
-            budget_ratios = json.loads(response.content.strip())
-
-            # 验证比例总和
-            total_ratio = sum(
-                budget_ratios.get(k, 0)
-                for k in ["hotel", "restaurant", "attractions", "transport", "other"]
-            )
-            if abs(total_ratio - 1.0) > 0.01:
-                logger.warning(f"预算比例总和不为1.0: {total_ratio}，进行标准化")
-                # 标准化比例
-                for key in ["hotel", "restaurant", "attractions", "transport", "other"]:
-                    budget_ratios[key] = budget_ratios.get(key, 0) / total_ratio
-
-            self.budget_ratios = budget_ratios
-            logger.info(f"智能生成预算分配比例: {budget_ratios}")
-            return budget_ratios
-
-        except Exception as e:
-            logger.error(f"智能生成预算比例失败: {e}，使用默认比例")
-            # 回退到默认比例
-            default_ratios = {
-                "hotel": 0.4,
-                "restaurant": 0.25,
-                "attractions": 0.15,
-                "transport": 0.15,
-                "other": 0.05,
-            }
-            self.budget_ratios = default_ratios
-            return default_ratios
-
-    async def generate_exchange_rates(self) -> Dict[str, float]:
-        """使用LLM智能生成汇率"""
-        try:
-            current_time = datetime.now().strftime("%Y年%m月%d日 %H:%M")
-
-            exchange_rates = {}
-            for currency in self.supported_currencies:
-                if currency == Currency.CNY:
-                    continue
-
-                prompt = EXCHANGE_RATE_PROMPT.format(
-                    currency=currency.value,
-                    current_time=current_time,
-                    market_trend="稳定",
-                )
-
-                llm = self.llm_instance
-                if llm is None:
-                    raise Exception("LLM实例不可用")
-                response = llm.invoke([HumanMessage(content=prompt)])
-                rate_info = json.loads(response.content.strip())
-
-                exchange_rates[currency.value] = rate_info.get("estimated_rate", 0.0)
-                logger.info(
-                    f"智能生成汇率 {currency.value}: {rate_info.get('estimated_rate', 0.0)}"
-                )
-
-            self.exchange_rates = exchange_rates
-            return exchange_rates
-
-        except Exception as e:
-            logger.error(f"智能生成汇率失败: {e}，使用默认汇率")
-            # 回退到默认汇率
-            default_rates = {
-                "USD": 7.2,
-                "EUR": 7.8,
-                "JPY": 0.048,
-                "KRW": 0.0054,
-                "GBP": 9.1,
-                "AUD": 4.8,
-                "CAD": 5.3,
-            }
-            self.exchange_rates = default_rates
-            return default_rates
+        """生成预算分配比例（使用默认值）"""
+        # 使用固定的默认比例，简化系统
+        default_ratios = {
+            "hotel": 0.4,
+            "restaurant": 0.25,
+            "attractions": 0.15,
+            "transport": 0.15,
+            "other": 0.05,
+        }
+        self.budget_ratios = default_ratios
+        logger.info(f"使用默认预算分配比例: {default_ratios}")
+        return default_ratios
 
     async def validate_city_intelligent(
         self, city_name: str, user_requirements: str = "", travel_type: str = "leisure"
     ) -> Dict[str, Any]:
-        """使用LLM智能验证城市信息"""
-        try:
-            prompt = CITY_VALIDATION_PROMPT.format(
-                city_name=city_name,
-                user_requirements=user_requirements,
-                travel_type=travel_type,
-            )
-
-            llm = self.llm_instance
-            if llm is None:
-                raise Exception("LLM实例不可用")
-            response = llm.invoke([HumanMessage(content=prompt)])
-            validation_result = json.loads(response.content.strip())
-
-            logger.info(f"智能城市验证: {city_name} -> {validation_result}")
-            return validation_result
-
-        except Exception as e:
-            logger.error(f"智能城市验证失败: {e}")
-            return {
-                "is_valid": True,
-                "city_type": "unknown",
-                "country": "未知",
-                "region": "未知",
-                "timezone": "未知",
-                "best_season": "全年",
-                "travel_tips": ["建议提前了解当地情况"],
-                "safety_level": "一般",
-                "cost_level": "中等",
-            }
+        """验证城市信息（使用默认值）"""
+        # 使用简单的默认验证，简化系统
+        return {
+            "is_valid": True,
+            "city_type": "unknown",
+            "country": "未知",
+            "region": "未知",
+            "timezone": "未知",
+            "best_season": "全年",
+            "travel_tips": ["建议提前了解当地情况"],
+            "safety_level": "一般",
+            "cost_level": "中等",
+        }
 
     def get_budget_ratio(self, category: str) -> float:
         """获取预算分配比例"""

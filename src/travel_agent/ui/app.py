@@ -53,43 +53,6 @@ async def favicon():
     return Response(content=svg_icon, media_type="image/svg+xml")
 
 
-@app.post("/test-ai")
-async def test_ai(request: Request):
-    """测试AI功能的端点"""
-    try:
-        body = await request.json()
-        message = body.get("message", "")
-
-        from ..graph import create_travel_agent
-
-        # 创建旅行代理实例
-        agent = create_travel_agent()
-
-        # 调用代理处理用户消息
-        result = await agent.ainvoke(
-            {"messages": [{"role": "user", "content": message}]}
-        )
-
-        return {"success": True, "result": result}
-
-    except Exception as e:
-        logger.error(f"测试AI功能失败: {e}")
-        return {"success": False, "error": str(e)}
-
-
-@app.get("/env-test")
-async def test_env():
-    """测试环境变量配置"""
-    import os
-
-    return {
-        "OPENAI_API_KEY": "SET" if os.getenv("OPENAI_API_KEY") else "NOT SET",
-        "OPENAI_BASE_URL": os.getenv("OPENAI_BASE_URL", "NOT SET"),
-        "OPENAI_MODEL": os.getenv("OPENAI_MODEL", "NOT SET"),
-        "PYTHONPATH": os.getenv("PYTHONPATH", "NOT SET"),
-    }
-
-
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket端点处理实时通信"""

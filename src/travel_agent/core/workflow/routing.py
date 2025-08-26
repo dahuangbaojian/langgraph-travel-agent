@@ -34,8 +34,13 @@ def route_by_complexity(state: Dict[str, Any]) -> str:
 def route_by_validation(state: Dict[str, Any]) -> str:
     """根据验证结果智能路由"""
     destination_valid = state.get("destination_valid", False)
+    extracted_info = state.get("extracted_info", {})
 
+    # 如果目的地验证失败，但我们已经提取了信息，尝试继续
     if destination_valid:
+        return "budget_analyzer"
+    elif extracted_info and extracted_info.get("destination"):
+        # 有目的地信息但验证失败，可能是LLM验证问题，继续流程
         return "budget_analyzer"
     else:
         return "error_recovery"
