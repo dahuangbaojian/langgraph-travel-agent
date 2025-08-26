@@ -165,6 +165,9 @@ async def websocket_endpoint(websocket: WebSocket):
 @app.on_event("startup")
 async def startup_event():
     """应用启动事件"""
+    from ..config.logging_config import setup_logging
+
+    setup_logging()  # 配置全局logging系统
     log_startup()
 
 

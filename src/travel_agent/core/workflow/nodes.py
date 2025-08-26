@@ -5,7 +5,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from langchain_core.messages import HumanMessage
 
-from .utils import get_llm, _extract_travel_info_with_llm
+from ..llm_factory import get_llm
 from ..prompts.intent_analysis import INTENT_ANALYSIS_PROMPT
 from ..prompts.budget_analysis import BUDGET_ANALYSIS_PROMPT
 from ..prompts.duration_planning import DURATION_PLANNING_PROMPT
@@ -13,6 +13,32 @@ from ..prompts.route_generation import ROUTE_GENERATION_PROMPT
 from ..models import TravelInfo, BudgetBreakdown
 
 logger = logging.getLogger(__name__)
+
+
+async def _extract_travel_info_with_llm(user_message: str) -> Dict[str, Any]:
+    """使用LLM智能提取旅行信息"""
+    try:
+        from ..prompts.travel_extraction import TRAVEL_EXTRACTION_PROMPT
+
+        prompt = TRAVEL_EXTRACTION_PROMPT.format(message=user_message)
+
+        llm = get_llm()
+        if llm is None:
+            raise Exception("LLM实例不可用")
+
+        response = llm.invoke([HumanMessage(content=prompt)])
+        travel_info = json.loads(response.content.strip())
+
+        logger.info(f"LLM提取旅行信息: {travel_info}")
+        return travel_info
+
+    except Exception as e:
+        logger.error(f"LLM提取旅行信息失败: {e}")
+        # 使用TravelInfo模型的默认值
+        from ..models import TravelInfo
+
+        default_info = TravelInfo.create_default()
+        return default_info.to_dict()
 
 
 async def message_processor(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -190,41 +216,76 @@ async def travel_planner(state: Dict[str, Any]) -> Dict[str, Any]:
     return state
 
 
-async def response_generator(state: Dict[str, Any]) -> Dict[str, Any]:
-    """响应生成器 - 生成具体的旅行路线"""
+async def route_generator(state: Dict[str, Any]) -> Dict[str, Any]:
+    """路线生成器 - 生成具体的旅行路线"""
     try:
         travel_plan = state.get("travel_plan", {})
         travel_info = state.get("travel_info", {})
 
         destination = travel_plan.get("destination", "旅行目的地")
         duration = travel_plan.get("duration", "未知")
-        budget = travel_plan.get("budget", "未知")
         preferences = travel_info.preferences if travel_info else []
 
         # 生成具体的旅行路线
         route_content = _generate_travel_route(destination, duration, preferences)
 
-        # 生成完整响应
-        response_content = f"""🎯 **{destination}{duration}天最佳旅行路线**
-
-{route_content}"""
-
-        # 添加AI响应到状态
-        state["messages"].append({"role": "assistant", "content": response_content})
-        state["response"] = response_content
-        state["current_step"] = "response_generated"
+        # 将路线内容存储到状态中
+        state["route_content"] = route_content
+        state["current_step"] = "route_generated"
 
         logger.info("旅行路线生成完成")
 
     except Exception as e:
-        logger.error(f"响应生成失败: {e}")
+        logger.error(f"路线生成失败: {e}")
         # 生成错误响应
         error_response = (
             "抱歉，我在生成旅行路线时遇到了一些问题。请重新描述您的旅行需求。"
         )
+        state["route_content"] = error_response
+        state["current_step"] = "route_generation_failed"
+
+    return state
+
+
+async def response_generator(state: Dict[str, Any]) -> Dict[str, Any]:
+    """响应生成器 - 专门负责格式化最终的旅行路线输出"""
+    try:
+        # 从状态中获取已生成的数据
+        travel_plan = state.get("travel_plan", {})
+        travel_info = state.get("travel_info", {})
+        route_content = state.get("route_content", "")
+
+        # 检查必要数据是否存在
+        if not route_content:
+            logger.error("路线内容未找到，无法生成响应")
+            raise Exception("路线内容未生成")
+
+        destination = travel_plan.get("destination", "旅行目的地")
+        duration = travel_plan.get("duration", "未知")
+        budget = travel_plan.get("budget", "未知")
+        preferences = travel_info.preferences if travel_info else []
+
+        # 专门负责格式化输出
+        formatted_response = _format_travel_response(
+            destination, duration, budget, preferences, route_content
+        )
+
+        # 添加AI响应到状态
+        state["messages"].append({"role": "assistant", "content": formatted_response})
+        state["response"] = formatted_response
+        state["current_step"] = "response_generated"
+
+        logger.info("旅行路线响应格式化完成")
+
+    except Exception as e:
+        logger.error(f"响应格式化失败: {e}")
+        # 生成错误响应
+        error_response = (
+            "抱歉，我在格式化旅行路线时遇到了一些问题。请重新描述您的旅行需求。"
+        )
         state["messages"].append({"role": "assistant", "content": error_response})
         state["response"] = error_response
-        state["current_step"] = "response_generation_failed"
+        state["current_step"] = "response_formatting_failed"
 
     return state
 
@@ -245,19 +306,18 @@ def _generate_smart_budget_analysis(
 ) -> Dict[str, Any]:
     """生成预算分配分析（使用默认值）"""
 
-    # 使用BudgetBreakdown模型
-    budget_breakdown = BudgetBreakdown(
+    # 创建预算分析结果
+    budget_result = BudgetBreakdown(
         hotel=0.40,  # 住宿
-        restaurant=0.25,  # 餐饮
-        attractions=0.15,  # 景点
-        transport=0.15,  # 交通
-        other=0.05,  # 其他
+        transport=0.25,  # 交通
+        attractions=0.20,  # 景点
+        other=0.15,  # 其他
     )
 
     return {
         "total_budget": budget,
         "daily_budget": budget // max(duration_days, 1),  # 防止除零错误
-        "budget_breakdown": budget_breakdown.__dict__,  # 转换为字典
+        "budget_breakdown": budget_result.__dict__,  # 转换为字典
         "people_count": people_count,
         "duration_days": duration_days,
     }
@@ -273,9 +333,9 @@ def _generate_travel_route(
         route_content = _generate_llm_route(destination, duration, preferences)
         return route_content
     except Exception as e:
-        logger.warning(f"LLM路线生成失败，使用基础模板: {e}")
-        # 降级到基础模板
-        return _generate_basic_route_template(destination, duration, preferences)
+        logger.error(f"路线生成失败: {e}")
+        # 返回错误信息，让用户知道需要重新生成
+        return f"⚠️ 无法生成{destination}的{duration}天旅行路线，请重新尝试。"
 
 
 def _generate_llm_route(destination: str, duration: int, preferences: List[str]) -> str:
@@ -300,13 +360,25 @@ def _generate_llm_route(destination: str, duration: int, preferences: List[str])
 
             logger.info(f"路线生成LLM原始返回: {route_content}")
 
-            # 验证输出格式 - 检查是否包含基本的表格结构
-            if "|" in route_content:
-                return route_content
-            else:
-                # 如果不是表格格式，尝试转换为表格格式
-                logger.warning("LLM输出不是表格格式，尝试转换")
-                return _convert_to_table_format(route_content, duration)
+            # 尝试解析JSON格式
+            try:
+                import json
+
+                # 直接解析JSON，因为prompt已经要求返回纯JSON格式
+                route_data = json.loads(route_content.strip())
+
+                # 转换为Markdown格式
+                markdown_content = _convert_json_to_markdown(route_data)
+                logger.info("成功转换为Markdown格式")
+                return markdown_content
+
+            except json.JSONDecodeError as e:
+                logger.error(f"LLM返回不是有效JSON格式: {e}")
+                logger.error(f"原始内容: {route_content}")
+                return f"⚠️ LLM返回的路线格式不正确，请重新尝试。\n\n错误详情：{e}"
+            except Exception as e:
+                logger.error(f"处理路线数据时出错: {e}")
+                return f"⚠️ 处理路线数据时出错，请重新尝试。\n\n错误详情：{e}"
         else:
             raise Exception("LLM不可用")
 
@@ -315,107 +387,195 @@ def _generate_llm_route(destination: str, duration: int, preferences: List[str])
         raise e
 
 
-def _generate_basic_route_template(
-    destination: str, duration: int, preferences: List[str]
-) -> str:
-    """生成基础路线模板（LLM失败时的降级方案）"""
-
-    route_lines = []
-
-    for day in range(1, duration + 1):
-        if day == 1:
-            day_title = f"**第{day}天：抵达探索**"
-            morning = f"抵达{destination}，酒店入住，适应时差"
-            afternoon = f"市中心地标游览，熟悉{destination}环境"
-            evening = f"品尝{destination}当地特色晚餐，休息调整"
-        elif day == duration:
-            day_title = f"**第{day}天：告别之旅**"
-            morning = f"游览{destination}最后的重要景点"
-            afternoon = f"购买{destination}特色纪念品，告别晚餐"
-            evening = f"整理行装，准备从{destination}返程"
-        else:
-            day_title = f"**第{day}天：深度体验**"
-            morning = f"探索{destination}的标志性建筑和历史遗迹"
-            afternoon = f"体验{destination}的当地文化和美食"
-            evening = f"欣赏{destination}的夜景，体验夜生活"
-
-        day_content = f"""{day_title}
-• 上午：{morning}
-• 下午：{afternoon}
-• 晚上：{evening}"""
-
-        route_lines.append(day_content)
-
-    return "\n\n".join(route_lines)
+# 这个函数不再需要，已删除
 
 
-def _convert_to_table_format(route_content: str, duration: int) -> str:
-    """将非表格格式的路线转换为表格格式"""
-
-    # 如果内容包含天数信息，尝试提取并转换
-    if "第" in route_content and "天" in route_content:
-        # 简单的转换逻辑
-        table_lines = [
-            "| 天数 | 日期 | 出发城市 → 到达城市 | 主要景点/活动 |",
-            "|------|------|-------------------|---------------------------|",
-        ]
-
-        # 提取天数信息并转换为表格行
-        for day in range(1, duration + 1):
-            day_marker = f"第{day}天"
-            if day_marker in route_content:
-                # 提取该天的内容
-                day_content = _extract_day_content(route_content, day)
-                table_lines.append(f"| D{day} | {day_marker} | 待定 | {day_content} |")
-            else:
-                table_lines.append(f"| D{day} | 第{day}天 | 待定 | 待定 |")
-
-        return "\n".join(table_lines)
-
-    # 如果无法转换，返回基础表格模板
-    return _generate_basic_table_template(duration)
-
-
-def _extract_day_content(route_content: str, day: int) -> str:
-    """提取指定天数的内容"""
-    day_marker = f"第{day}天"
+def _convert_json_to_markdown(route_data: dict) -> str:
+    """将JSON格式的路线数据转换为Markdown格式，使用Jinja2模板系统"""
     try:
-        # 简单的文本提取逻辑
-        start_idx = route_content.find(day_marker)
-        if start_idx != -1:
-            # 找到下一个天数标记或结尾
-            next_day = f"第{day + 1}天"
-            end_idx = route_content.find(next_day, start_idx)
-            if end_idx == -1:
-                end_idx = len(route_content)
+        # 使用模板管理器
+        from ...templates.manager import TemplateManager
 
-            day_content = route_content[start_idx:end_idx].strip()
-            # 清理标记词
-            day_content = day_content.replace(day_marker, "").replace("：", "").strip()
-            return day_content if day_content else "待定"
-    except:
-        pass
+        template_manager = TemplateManager()
 
-    return "待定"
+        # 渲染模板
+        markdown_content = template_manager.render_template(
+            "unified_route_template.j2", format_level="full", **route_data  # 完整格式
+        )
+
+        if markdown_content is None:
+            logger.error("模板渲染失败，使用备用系统")
+            return _convert_json_to_markdown_fallback(route_data)
+
+        # 清理多余的空行
+        markdown_content = "\n".join(
+            line for line in markdown_content.split("\n") if line.strip() or line == ""
+        )
+
+        return markdown_content
+
+    except ImportError:
+        logger.error("Jinja2未安装，使用备用模板系统")
+        return _convert_json_to_markdown_fallback(route_data)
+    except Exception as e:
+        logger.error(f"Jinja2模板渲染失败: {e}")
+        return _convert_json_to_markdown_fallback(route_data)
 
 
-def _generate_basic_table_template(duration: int) -> str:
-    """生成基础表格模板"""
-    table_lines = [
-        "| 天数 | 日期 | 出发城市 → 到达城市 | 主要景点/活动 |",
-        "|------|------|-------------------|---------------------------|",
-    ]
+def _convert_json_to_markdown_fallback(route_data: dict) -> str:
+    """备用模板系统（当主模板不可用时）"""
+    try:
+        # 创建模板管理器实例
+        from ...templates.manager import TemplateManager
 
-    for day in range(1, duration + 1):
-        if day == 1:
-            table_lines.append(
-                f"| D{day} | 第{day}天 | 出发城市 → 出发城市市区 | 接机，酒店入住，市区游览 |"
+        template_manager = TemplateManager()
+
+        # 使用简化格式
+        markdown_content = template_manager.render_template(
+            "unified_route_template.j2", format_level="simple", **route_data  # 简化格式
+        )
+
+        if markdown_content is None:
+            logger.error("备用模板渲染失败")
+            return f"⚠️ 路线数据转换失败，请重新尝试。"
+
+        return markdown_content
+
+    except Exception as e:
+        logger.error(f"备用模板系统失败: {e}")
+        return f"⚠️ 路线数据转换失败，请重新尝试。\n\n错误详情：{e}"
+
+
+def _format_travel_response(
+    destination: str,
+    duration: str,
+    budget: str,
+    preferences: List[str],
+    route_content: str,
+) -> str:
+    """格式化旅行响应输出"""
+
+    try:
+        # 使用模板管理器
+        from ...templates.manager import TemplateManager
+
+        template_manager = TemplateManager()
+
+        # 准备模板数据
+        template_data = {
+            "destination": destination,
+            "duration": duration,
+            "budget": budget,
+            "preferences": preferences,
+            "route_content": route_content,
+        }
+
+        # 渲染响应模板
+        formatted_response = template_manager.render_template(
+            "unified_response_template.j2",
+            format_level="full",  # 完整格式
+            **template_data,
+        )
+
+        if formatted_response is None:
+            logger.error("响应模板渲染失败，使用备用格式")
+            return _format_travel_response_fallback(
+                destination, duration, budget, preferences, route_content
             )
-        elif day == duration:
-            table_lines.append(
-                f"| D{day} | 第{day}天 | 出发城市 → 出发城市机场 | 送机，结束行程 |"
-            )
-        else:
-            table_lines.append(f"| D{day} | 第{day}天 | 待定 → 待定 | 待定 |")
 
-    return "\n".join(table_lines)
+        return formatted_response
+
+    except Exception as e:
+        logger.error(f"响应模板渲染失败: {e}")
+        return _format_travel_response_fallback(
+            destination, duration, budget, preferences, route_content
+        )
+
+
+def _format_travel_response_fallback(
+    destination: str,
+    duration: str,
+    budget: str,
+    preferences: List[str],
+    route_content: str,
+) -> str:
+    """响应格式化的备用方案"""
+
+    try:
+        # 使用备用响应模板
+        from ...templates.manager import TemplateManager
+
+        template_manager = TemplateManager()
+
+        # 准备模板数据
+        template_data = {
+            "destination": destination,
+            "duration": duration,
+            "budget": budget,
+            "preferences": preferences,
+            "route_content": route_content,
+        }
+
+        # 渲染简化格式
+        formatted_response = template_manager.render_template(
+            "unified_response_template.j2",
+            format_level="simple",  # 简化格式
+            **template_data,
+        )
+
+        if formatted_response is None:
+            logger.error("备用响应模板也失败了，使用最简单的字符串拼接")
+            return _generate_simple_response(
+                destination, duration, budget, preferences, route_content
+            )
+
+        return formatted_response
+
+    except Exception as e:
+        logger.error(f"备用响应模板失败: {e}")
+        return _generate_simple_response(
+            destination, duration, budget, preferences, route_content
+        )
+
+
+def _generate_simple_response(
+    destination: str,
+    duration: str,
+    budget: str,
+    preferences: List[str],
+    route_content: str,
+) -> str:
+    """最简单的响应格式 - 最后的保障模板"""
+
+    try:
+        # 使用最简单响应模板
+        from ...templates.manager import TemplateManager
+
+        template_manager = TemplateManager()
+
+        # 准备模板数据
+        template_data = {
+            "destination": destination,
+            "duration": duration,
+            "budget": budget,
+            "preferences": preferences,
+            "route_content": route_content,
+        }
+
+        # 渲染基础格式
+        formatted_response = template_manager.render_template(
+            "unified_response_template.j2",
+            format_level="basic",  # 基础格式
+            **template_data,
+        )
+
+        if formatted_response is None:
+            logger.error("最简单响应模板也失败了，返回基础错误信息")
+            return f"🎯 **{destination}{duration}天旅行路线**\n\n{route_content}\n\n⚠️ 格式化失败，但路线内容已生成"
+
+        return formatted_response
+
+    except Exception as e:
+        logger.error(f"最简单响应模板失败: {e}")
+        # 最后的保障 - 返回最基本的格式
+        return f"🎯 **{destination}{duration}天旅行路线**\n\n{route_content}\n\n⚠️ 格式化失败，但路线内容已生成"

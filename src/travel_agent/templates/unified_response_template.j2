@@ -1,0 +1,65 @@
+{# 统一响应模板 - 通过参数控制不同格式 #}
+{# 支持三种模式：完整、简化、基础 #}
+
+{# 主标题 #}
+🎯 **{{ destination }}{{ duration }}天最佳旅行路线**
+
+{# 基本信息 - 根据format_level显示不同内容 #}
+{% if format_level == "full" %}
+    {# 完整格式 - 显示所有信息 #}
+    {% if budget and budget != "未知" %}
+    💰 **预算**: {{ budget }}元
+
+    {% endif %}
+    {% if preferences and preferences|length > 0 %}
+    🌟 **偏好**: {{ preferences | join(', ') }}
+
+    {% endif %}
+{% elif format_level == "simple" %}
+    {# 简化格式 - 显示基本信息 #}
+    {% if budget and budget != "未知" %}
+    💰 **预算**: {{ budget }}元
+
+    {% endif %}
+    {% if preferences and preferences|length > 0 %}
+    🌟 **偏好**: {{ preferences | join(', ') }}
+
+    {% endif %}
+{% else %}
+    {# 基础格式 - 只显示必要信息 #}
+    {% if budget and budget != "未知" %}
+    💰 **预算**: {{ budget }}元
+
+    {% endif %}
+{% endif %}
+
+{# 路线内容 #}
+{{ route_content }}
+
+{# 分隔线和提示 - 根据format_level显示不同内容 #}
+{% if format_level == "full" %}
+    {# 完整格式 - 显示详细提示 #}
+
+    ---
+
+    💡 **温馨提示**:
+    • 以上路线仅供参考，具体行程可根据实际情况调整
+    • 建议提前预订酒店和交通
+    • 如有特殊需求，请告诉我，我会为您调整
+    • 祝您旅途愉快！
+{% elif format_level == "simple" %}
+    {# 简化格式 - 显示基本提示 #}
+
+    ---
+
+    💡 **温馨提示**:
+    • 以上路线仅供参考，具体行程可根据实际情况调整
+    • 建议提前预订酒店和交通
+    • 如有特殊需求，请告诉我，我会为您调整
+{% else %}
+    {# 基础格式 - 显示最少提示 #}
+
+    ---
+
+    💡 **提示**: 路线仅供参考，具体行程请根据实际情况调整
+{% endif %}

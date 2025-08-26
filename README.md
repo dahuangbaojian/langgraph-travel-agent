@@ -175,12 +175,11 @@ python -m uvicorn travel_agent.ui.app:app --host 0.0.0.0 --port 8001 --reload
 在`src/travel_agent/config/settings.py`中：
 
 ```python
-budget_ratios = {
-    "hotel": 0.4,      # 住宿40%
-    "restaurant": 0.25, # 餐饮25%
-    "attractions": 0.15, # 景点15%
-    "transport": 0.15,   # 交通15%
-    "other": 0.05       # 其他5%
+"budget_breakdown": {
+    "hotel": 0.40,      # 住宿40%
+    "transport": 0.25,   # 交通25%
+    "attractions": 0.20, # 景点20%
+    "other": 0.15        # 其他15%
 }
 ```
 

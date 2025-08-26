@@ -10,10 +10,7 @@ from .nodes import (
 # 简化的系统不再需要复杂的路由函数
 
 # 导入辅助函数
-from .utils import (
-    get_llm,
-    _extract_travel_info_with_llm,
-)
+from ..llm_factory import get_llm
 
 __all__ = [
     # 核心节点
@@ -22,5 +19,4 @@ __all__ = [
     "response_generator",
     # 辅助函数
     "get_llm",
-    "_extract_travel_info_with_llm",
 ]

@@ -1,0 +1,60 @@
+{# 统一路线模板 - 通过参数控制不同格式 #}
+{# 支持两种模式：完整、简化 #}
+
+{# 主标题 #}
+# {{ route_title }}
+
+{# 每日行程安排表格 - 根据format_level显示不同内容 #}
+{% if daily_plans %}
+## 📅 每日行程安排
+
+| 天数 | 日期 | 出发地 → 到达地 | 主要景点/活动 | 交通时长 | 注意事项 |
+|------|------|-------------------|---------------------------|----------|----------|
+{% for plan in daily_plans %}
+| {{ plan.day or '待定' }} | {{ plan.date or '待定' }} | {% if plan.departure != plan.arrival %}{{ plan.departure }} → {{ plan.arrival }}{% else %}{{ plan.departure }}{% endif %} | {% if plan.attractions or plan.activities %}{{ (plan.attractions or []) + (plan.activities or []) | join('、') }}{% else %}待定{% endif %} | {{ plan.transport_time or '待定' }} | {{ plan.notes or '无' }} |
+{% endfor %}
+{% endif %}
+
+{# 路线总结 - 根据format_level显示不同内容 #}
+{% if summary %}
+{% if format_level == "full" %}
+## 📋 路线总结
+{{ summary }}
+{% else %}
+## 📋 总结
+{{ summary }}
+{% endif %}
+{% endif %}
+
+{# 旅行建议 - 根据format_level显示不同内容 #}
+{% if tips %}
+{% if format_level == "full" %}
+## 💡 旅行建议
+{% for tip in tips %}
+{{ loop.index }}. {{ tip }}
+{% endfor %}
+{% else %}
+## 💡 建议
+{% for tip in tips %}
+{{ loop.index }}. {{ tip }}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{# 扩展信息 - 只在完整格式下显示 #}
+{% if format_level == "full" %}
+{% if transport_info %}
+## 🚗 交通信息
+{{ transport_info }}
+{% endif %}
+
+{% if accommodation_info %}
+## 🏨 住宿信息
+{{ accommodation_info }}
+{% endif %}
+
+{% if budget_info %}
+## 💰 预算信息
+{{ budget_info }}
+{% endif %}
+{% endif %}
