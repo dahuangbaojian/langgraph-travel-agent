@@ -7,12 +7,12 @@ from .config.settings import config
 from .core.models import *
 
 # 数据管理器已移除，使用LLM + Tools方式
-from .tools.planner import travel_planner
+from .tools.planner import travel_planning_data_provider
 from .graph import graph
 
 __all__ = [
     "config",
     # "travel_data_manager",  # 已移除
-    "travel_planner",
+    "travel_planning_data_provider",
     "graph",
 ]

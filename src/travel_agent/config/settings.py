@@ -70,23 +70,12 @@ class TravelAgentConfig:
 
     def __post_init__(self):
         """初始化后处理"""
-        # 初始化LLM实例
-        if self.llm is None:
-            self.llm = ChatOpenAI(
-                model=self.default_model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                openai_api_base=os.getenv("OPENAI_BASE_URL"),
-            )
+        # LLM实例将在需要时延迟创建
+        # 基础文件配置 - 现在使用动态数据加载
 
-        # 基础文件配置
+        # 基础文件配置 - 现在使用动态数据加载
         if self.excel_files is None:
-            self.excel_files = {
-                "hotels": "hotels.xlsx",
-                "attractions": "attractions.xlsx",
-                "restaurants": "restaurants.xlsx",
-                "transport": "transport.xlsx",
-            }
+            self.excel_files = {}  # 动态加载真实数据文件
 
         # 支持货币列表
         if self.supported_currencies is None:
@@ -102,6 +91,22 @@ class TravelAgentConfig:
             ]
 
         # 预算分配和汇率将在需要时动态生成
+
+    @property
+    def llm_instance(self):
+        """延迟创建LLM实例"""
+        if self.llm is None:
+            try:
+                self.llm = ChatOpenAI(
+                    model=self.default_model,
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    openai_api_base=os.getenv("OPENAI_BASE_URL"),
+                )
+            except Exception as e:
+                logger.warning(f"创建LLM实例失败: {e}")
+                return None
+        return self.llm
 
     @property
     def data_path(self) -> Path:
@@ -131,7 +136,10 @@ class TravelAgentConfig:
                 people_count=travel_info.get("people_count", 2),
             )
 
-            response = self.llm.invoke([HumanMessage(content=prompt)])
+            llm = self.llm_instance
+            if llm is None:
+                raise Exception("LLM实例不可用")
+            response = llm.invoke([HumanMessage(content=prompt)])
             budget_ratios = json.loads(response.content.strip())
 
             # 验证比例总和
@@ -178,7 +186,10 @@ class TravelAgentConfig:
                     market_trend="稳定",
                 )
 
-                response = self.llm.invoke([HumanMessage(content=prompt)])
+                llm = self.llm_instance
+                if llm is None:
+                    raise Exception("LLM实例不可用")
+                response = llm.invoke([HumanMessage(content=prompt)])
                 rate_info = json.loads(response.content.strip())
 
                 exchange_rates[currency.value] = rate_info.get("estimated_rate", 0.0)
@@ -215,7 +226,10 @@ class TravelAgentConfig:
                 travel_type=travel_type,
             )
 
-            response = self.llm.invoke([HumanMessage(content=prompt)])
+            llm = self.llm_instance
+            if llm is None:
+                raise Exception("LLM实例不可用")
+            response = llm.invoke([HumanMessage(content=prompt)])
             validation_result = json.loads(response.content.strip())
 
             logger.info(f"智能城市验证: {city_name} -> {validation_result}")

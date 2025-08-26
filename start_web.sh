@@ -10,4 +10,4 @@ echo "OPENAI_API_KEY: ${OPENAI_API_KEY:0:10}..."
 echo "OPENAI_BASE_URL: $OPENAI_BASE_URL"
 echo "OPENAI_MODEL: $OPENAI_MODEL"
 
-uvicorn src.travel_agent.ui.app:app --host 0.0.0.0 --port 8000 --reload
+uvicorn src.travel_agent.ui.app:app --host 0.0.0.0 --port 8001 --reload

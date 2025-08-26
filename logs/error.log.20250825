@@ -1,0 +1,4 @@
+2025-08-25 10:36:32 | travel_agent.ui | ERROR | app.py:76 | test_ai | 测试AI功能失败: 'parsed_message'
+2025-08-25 10:36:36 | travel_agent.ui | ERROR | app.py:76 | test_ai | 测试AI功能失败: 'parsed_message'
+2025-08-25 12:41:12 | travel_agent.ui | ERROR | app.py:166 | websocket_endpoint | LangGraph处理错误: unsupported format string passed to NoneType.__format__
+2025-08-25 12:44:44 | travel_agent.ui | ERROR | app.py:166 | websocket_endpoint | LangGraph处理错误: Unknown format code 'f' for object of type 'str'
